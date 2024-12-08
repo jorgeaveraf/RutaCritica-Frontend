@@ -20,7 +20,7 @@ class _PertProyectoState extends State<PertProyecto> {
 
       if (response.statusCode == 200) {
         // Decodificar el JSON recibido
-        final decodedData = json.decode(response.body);
+        final decodedData = jsonDecode(utf8.decode(response.bodyBytes));
 
         // Verificar si contiene la clave 'hitos'
         if (decodedData is Map<String, dynamic> && decodedData.containsKey('hitos')) {
