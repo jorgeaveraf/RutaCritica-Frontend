@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'pertProyecto.dart';
+import 'cpmProyecto.dart';  // Asegúrate de importar la pantalla correcta
+
 class DetallesProyecto extends StatefulWidget {
   final String nombreProyecto;
   final String descripcionProyecto;
@@ -31,17 +34,21 @@ class _DetallesProyectoState extends State<DetallesProyecto> {
     try {
       final response = await http.get(uri);
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
         if (data['estado'] == 'exito') {
           setState(() {
             subtareas = List<Map<String, dynamic>>.from(
               data['subtareas'].map((subtarea) {
                 return {
+                  'id': subtarea['subtarea_id'], // ID necesario para actualizar
                   'nombre': subtarea['nombre'],
-                  'tiempoEstimado': (subtarea['tiempoEstimado'] ?? 0.0) is double
-                      ? subtarea['tiempoEstimado']
-                      : double.tryParse(subtarea['tiempoEstimado'].toString()) ?? 0.0,
-                  'tiempoReal': subtarea['tiempoReal'],
+                  'tiempoEstimado':
+                      (subtarea['tiempo_estimado'] ?? 0.0) is double
+                          ? subtarea['tiempo_estimado']
+                          : double.tryParse(
+                                  subtarea['tiempo_estimado'].toString()) ??
+                              0.0,
+                  'tiempoReal': subtarea['tiempo_real'],
                 };
               }),
             );
@@ -55,7 +62,8 @@ class _DetallesProyectoState extends State<DetallesProyecto> {
         }
       } else {
         setState(() {
-          errorMessage = 'Error al conectar con el servidor: ${response.statusCode}';
+          errorMessage =
+              'Error al conectar con el servidor: ${response.statusCode}';
           isLoading = false;
         });
       }
@@ -67,9 +75,43 @@ class _DetallesProyectoState extends State<DetallesProyecto> {
     }
   }
 
+  Future<void> _actualizarTiempoReal(
+      String subtareaId, double tiempoReal) async {
+    final uri = Uri.parse('http://127.0.0.1:8000/subtarea/$subtareaId');
+    try {
+      final response = await http.put(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'tiempo_real': tiempoReal}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        if (data['estado'] == 'exito') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(data['mensaje'])),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${data['detalle']}')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error al actualizar: ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al conectar con el servidor: $e')),
+      );
+    }
+  }
+
   void asignarTiempoReal(int index, double tiempoReal) {
     setState(() {
-      subtareas[index]['tiempoReal'] = tiempoReal;
+      subtareas[index]['tiempo_real'] = tiempoReal;
     });
   }
 
@@ -82,7 +124,9 @@ class _DetallesProyectoState extends State<DetallesProyecto> {
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : errorMessage.isNotEmpty
-              ? Center(child: Text(errorMessage, style: TextStyle(color: Colors.red)))
+              ? Center(
+                  child:
+                      Text(errorMessage, style: TextStyle(color: Colors.red)))
               : Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -90,23 +134,35 @@ class _DetallesProyectoState extends State<DetallesProyecto> {
                     children: [
                       Text(
                         widget.nombreProyecto,
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       SizedBox(height: 8),
-                      Text(widget.descripcionProyecto, style: TextStyle(fontSize: 16)),
+                      Text(widget.descripcionProyecto,
+                          style: TextStyle(fontSize: 16)),
                       SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           ElevatedButton(
                             onPressed: () {
-                              // Navegar o mostrar análisis PERT
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => PertProyecto()),
+                              );
                             },
                             child: Text('Ver Análisis PERT'),
                           ),
                           ElevatedButton(
                             onPressed: () {
-                              // Navegar o mostrar ruta crítica
+                              // Navegar a la pantalla de Ruta Crítica
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CriticalPathScreen(),
+                                ),
+                              );
                             },
                             child: Text('Ver Ruta Crítica'),
                           ),
@@ -135,7 +191,7 @@ class _DetallesProyectoState extends State<DetallesProyecto> {
                                       'Tiempo estimado: ${subtarea['tiempoEstimado'] != null ? subtarea['tiempoEstimado'].toStringAsFixed(1) : 'No definido'} horas',
                                     ),
                                     Text(
-                                      'Tiempo real: ${subtarea['tiempoReal'] != null ? subtarea['tiempoReal'].toString() : 'N/A'} horas',
+                                      'Tiempo real: ${subtarea['tiempo_real'] != null ? subtarea['tiempo_real'].toString() : 'N/A'} horas',
                                     ),
                                   ],
                                 ),
@@ -152,7 +208,10 @@ class _DetallesProyectoState extends State<DetallesProyecto> {
                                     );
 
                                     if (tiempo != null) {
+                                      // Actualizar la UI y la base de datos
                                       asignarTiempoReal(index, tiempo);
+                                      await _actualizarTiempoReal(
+                                          subtarea['id'], tiempo);
                                     }
                                   },
                                 ),
