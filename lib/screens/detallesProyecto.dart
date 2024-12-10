@@ -3,7 +3,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'pertProyecto.dart';
-import 'cpmProyecto.dart';  // Asegúrate de importar la pantalla correcta
+import 'reporteProyecto.dart';
+import 'cpmProyecto.dart';  
 
 class DetallesProyecto extends StatefulWidget {
   final String nombreProyecto;
@@ -168,7 +169,12 @@ class _DetallesProyectoState extends State<DetallesProyecto> {
                           ),
                           ElevatedButton(
                             onPressed: () {
-                              // Navegar o mostrar reportes
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ReporteProyecto(),
+                                ),
+                              );    
                             },
                             child: Text('Ver Reportes'),
                           ),
