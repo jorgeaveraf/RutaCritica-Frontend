@@ -3,6 +3,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ReporteProyecto extends StatefulWidget {
+  final double tiempoRealAcumulado; // Recibimos el tiempo real acumulado desde la pantalla anterior
+
+  ReporteProyecto({required this.tiempoRealAcumulado});
+
   @override
   _ReporteProyectoState createState() => _ReporteProyectoState();
 }
@@ -74,12 +78,21 @@ class _ReporteProyectoState extends State<ReporteProyecto> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 16),
-        _buildDetailRow("Tiempo Optimista:", _proyecto["tiempo_optimista_proyecto"]),
-        _buildDetailRow("Tiempo Pesimista:", _proyecto["tiempo_pesimista_proyecto"]),
-        _buildDetailRow("Desviación Estándar:", _proyecto["desviacion_estandar_total"]),
-        _buildDetailRow("PERT Total:", _proyecto["pert_total"]),
+        _buildDetailRow("Tiempo Real Acumulado:", widget.tiempoRealAcumulado.toStringAsFixed(2)),
+        _buildDetailRow("Tiempo Optimista:", _formatDouble(_proyecto["tiempo_optimista_proyecto"])),
+        _buildDetailRow("Tiempo Pesimista:", _formatDouble(_proyecto["tiempo_pesimista_proyecto"])),
+        _buildDetailRow("Desviación Estándar:", _formatDouble(_proyecto["desviacion_estandar_total"])),
+        _buildDetailRow("PERT Total:", _formatDouble(_proyecto["pert_total"])),
       ],
     );
+  }
+
+  // Método para formatear los valores de tipo double
+  String _formatDouble(dynamic value) {
+    if (value != null) {
+      return value.toStringAsFixed(2);
+    }
+    return "N/A";
   }
 
   Widget _buildDetailRow(String title, dynamic value) {

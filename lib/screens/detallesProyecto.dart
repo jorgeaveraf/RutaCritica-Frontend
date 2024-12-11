@@ -23,6 +23,7 @@ class _DetallesProyectoState extends State<DetallesProyecto> {
   List<Map<String, dynamic>> subtareas = [];
   bool isLoading = true;
   String errorMessage = '';
+  double tiempoRealAcumulado = 0.0; // Variable para acumular el tiempo real
 
   @override
   void initState() {
@@ -78,12 +79,12 @@ class _DetallesProyectoState extends State<DetallesProyecto> {
 
   Future<void> _actualizarTiempoReal(
       String subtareaId, double tiempoReal) async {
-    final uri = Uri.parse('http://127.0.0.1:8000/subtarea/$subtareaId');
+    final uri = Uri.parse('http://127.0.0.1:8000/rutaCritica/subtarea/$subtareaId');
     try {
       final response = await http.put(
         uri,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'tiempo_real': tiempoReal}),
+        body: jsonEncode({'tiempoReal': tiempoReal}),
       );
 
       if (response.statusCode == 200) {
@@ -113,6 +114,7 @@ class _DetallesProyectoState extends State<DetallesProyecto> {
   void asignarTiempoReal(int index, double tiempoReal) {
     setState(() {
       subtareas[index]['tiempo_real'] = tiempoReal;
+      tiempoRealAcumulado += tiempoReal; // Acumular el tiempo real
     });
   }
 
@@ -172,13 +174,20 @@ class _DetallesProyectoState extends State<DetallesProyecto> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => ReporteProyecto(),
+                                  builder: (context) => ReporteProyecto(
+                                    tiempoRealAcumulado: tiempoRealAcumulado,
+                                  ),
                                 ),
                               );    
                             },
                             child: Text('Ver Reportes'),
                           ),
                         ],
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'Tiempo Real Acumulado: ${tiempoRealAcumulado.toStringAsFixed(2)} horas',
+                        style: TextStyle(fontSize: 16),
                       ),
                       SizedBox(height: 16),
                       Expanded(
